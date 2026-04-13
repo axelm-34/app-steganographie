@@ -1,3 +1,5 @@
+Commencer par le back (encodage puis décodage) et quand sa marche on fait le front
+
 Flux de fonctionnement
 Encodage
 UI (EncodeView)
@@ -12,3 +14,5 @@ UI (DecodeView)
    → LSBDecoder
      → retourne message
        → affiché à l’écran
+
+Faire que pour PNG
