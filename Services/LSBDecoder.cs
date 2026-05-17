@@ -8,7 +8,7 @@ namespace SteganographyApp.Services;
 
 public class LSBDecoder
 {
-    // Convertit une liste de 32 bits en un nombre entier (utilisé pour lire la taille du message).
+    // Convertit une liste de bits en un nombre entier.
     private int BitsToInt(List<int> bits) {
         int value = 0;
 

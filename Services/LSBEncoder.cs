@@ -8,7 +8,7 @@ namespace SteganographyApp.Services;
 
 public class LSBEncoder
 {
-    // Convertit le message texte en une liste de bits (0 et 1).
+    // Convertit le message en une liste de bits (0/1) en UTF-8.
     private List<int> MessageToBits(string message)
     {
         var bits = new List<int>();
@@ -41,7 +41,7 @@ public class LSBEncoder
         return result;
     }
 
-    // Modifie les bits de poids faible de l'image source pour y dissimuler le message.
+    // Modifie le bit de poids faible des cannaux (R,G,B) des pixels de l'image source pour y dissimuler le message.
     public WriteableBitmap Encode(WriteableBitmap image, string message)
     {
         var newImage = new WriteableBitmap(
