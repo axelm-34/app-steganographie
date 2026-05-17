@@ -12,7 +12,6 @@ public partial class DecodeView : UserControl
     private WriteableBitmap? _selectedImage;
     private readonly LSBDecoder _decoder = new();
 
-    // Initialise la vue de décodage et relie les événements des boutons.
     public DecodeView()
     {
         InitializeComponent();
@@ -23,23 +22,24 @@ public partial class DecodeView : UserControl
     // Ouvre un explorateur de fichiers pour sélectionner l'image à analyser.
     private async void OnSelectImageClick(object? sender, RoutedEventArgs e)
     {
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel == null) return;
+        var fenetrePrincipale = TopLevel.GetTopLevel(this);
+        if (fenetrePrincipale == null) return;
 
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var fichiersChoisis = await fenetrePrincipale.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Sélectionner une image",
             AllowMultiple = false,
             FileTypeFilter = new[] { FilePickerFileTypes.ImageAll }
         });
 
-        if (files.Count > 0)
+        if (fichiersChoisis.Count > 0)
         {
             try {
-                using var stream = await files[0].OpenReadAsync();
+                using var stream = await fichiersChoisis[0].OpenReadAsync();
                 _selectedImage = WriteableBitmap.Decode(stream);
+                
                 StatusText.Text = "Image chargée avec succès. Prêt à décoder.";
-                MessageTextBox.Text = string.Empty;
+                MessageTextBox.Text = ""; 
             } catch (Exception ex) {
                 StatusText.Text = "Erreur de chargement : " + ex.Message;
             }
@@ -54,11 +54,14 @@ public partial class DecodeView : UserControl
             return;
         }
         
-        string decodedText = _decoder.Decode(_selectedImage);
+        string texteExtrait = _decoder.Decode(_selectedImage);
+        string motDePasse = PasswordTextBox.Text;
         
-        if (decodedText.StartsWith("ENC:"))
+        bool estChiffre = texteExtrait.StartsWith("ENC:");
+        
+        if (estChiffre)
         {
-            if (string.IsNullOrWhiteSpace(PasswordTextBox.Text))
+            if (string.IsNullOrWhiteSpace(motDePasse))
             {
                 StatusText.Text = "Erreur : Ce message est protégé par un mot de passe.";
                 return;
@@ -66,7 +69,9 @@ public partial class DecodeView : UserControl
             
             try
             {
-                decodedText = CryptoService.Decrypt(decodedText.Substring(4), PasswordTextBox.Text);
+                string vraiMessageCrypte = texteExtrait.Substring(4);
+                
+                texteExtrait = CryptoService.Decrypt(vraiMessageCrypte, motDePasse);
             }
             catch
             {
@@ -75,7 +80,7 @@ public partial class DecodeView : UserControl
             }
         }
 
-        MessageTextBox.Text = decodedText;
+        MessageTextBox.Text = texteExtrait;
         StatusText.Text = "Décodage terminé avec succès.";
     }
 }
