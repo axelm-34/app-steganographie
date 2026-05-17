@@ -12,6 +12,7 @@ public partial class EncodeView : UserControl
     private WriteableBitmap? _selectedImage;
     private readonly LSBEncoder _encoder = new();
 
+    // Initialise la vue d'encodage et relie les événements des boutons.
     public EncodeView()
     {
         InitializeComponent();
@@ -19,6 +20,7 @@ public partial class EncodeView : UserControl
         EncodeButton.Click += OnEncodeClick;
     }
 
+    // Ouvre un explorateur de fichiers pour sélectionner l'image source et calcule sa capacité d'encodage.
     private async void OnSelectImageClick(object? sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
@@ -37,20 +39,27 @@ public partial class EncodeView : UserControl
             _selectedImage = WriteableBitmap.Decode(stream);
             StatusText.Text = "Image source chargée.";
             
-            // Calcul de la capacité de l'image
             long totalPixels = _selectedImage.PixelSize.Width * _selectedImage.PixelSize.Height;
             long maxChars = Math.Max(0, ((totalPixels * 3) - 32) / 8); 
             CapacityText.Text = $"Capacité maximale d'encodage : ~{maxChars} caractères ";
         }
     }
 
+    // Chiffre le message, l'encode dans l'image sélectionnée puis sauvegarde le fichier résultant.
     private async void OnEncodeClick(object? sender, RoutedEventArgs e)
     {
         if (_selectedImage == null || string.IsNullOrWhiteSpace(MessageTextBox.Text)) return;
         
         try 
         {
-            var newImage = _encoder.Encode(_selectedImage, MessageTextBox.Text);
+            string textToEncode = MessageTextBox.Text;
+            
+            if (!string.IsNullOrWhiteSpace(PasswordTextBox.Text))
+            {
+                textToEncode = "ENC:" + CryptoService.Encrypt(textToEncode, PasswordTextBox.Text);
+            }
+
+            var newImage = _encoder.Encode(_selectedImage, textToEncode);
 
             var topLevel = TopLevel.GetTopLevel(this);
             var file = await topLevel!.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
@@ -62,7 +71,7 @@ public partial class EncodeView : UserControl
 
             if (file == null) return;
             using var stream = await file.OpenWriteAsync();
-            newImage.Save(stream); // Sauvegarde directement l'image
+            newImage.Save(stream);
             StatusText.Text = "Image encodée et sauvegardée avec succès !";
         }
         catch (Exception ex) { StatusText.Text = "Erreur : " + ex.Message; }

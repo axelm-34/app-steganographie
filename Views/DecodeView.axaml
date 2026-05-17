@@ -13,6 +13,11 @@
                 Content="Choisir une image"
                 Width="200"/>
 
+        <TextBox x:Name="PasswordTextBox"
+                 PasswordChar="*"
+                 PlaceholderText="Mot de passe (si chiffré)"
+                 Width="200"/>
+
         <TextBox x:Name="MessageTextBox"
                  AcceptsReturn="True"
                  Height="120"
