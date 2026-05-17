@@ -1,3 +1,4 @@
-choisir image
-bouton “décoder”
-appel à LSBDecoder
+namespace SteganographyApp.ViewModels;
+public class DecodeViewModel
+{
+}

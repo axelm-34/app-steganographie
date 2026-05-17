@@ -1,1 +1,4 @@
-navigation entre pages / onglets
+namespace SteganographyApp.ViewModels;
+public class MainViewModel
+{
+}

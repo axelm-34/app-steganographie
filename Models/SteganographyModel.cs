@@ -1,4 +1,4 @@
-#Contient les donnés : 
-image sélectionnée
-message à encoder
-message décodé
+namespace SteganographyApp.Models;
+public class SteganographyModel
+{
+}

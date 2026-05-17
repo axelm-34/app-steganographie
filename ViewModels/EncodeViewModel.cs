@@ -1,4 +1,4 @@
-choisir image
-entrer message
-bouton “encoder”
-appel à LSBEncoder
+namespace SteganographyApp.ViewModels;
+public class EncodeViewModel
+{
+}

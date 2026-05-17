@@ -1,85 +1,105 @@
-private List<int> MessageToBits(string message) // Transforme message en binaire
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using Avalonia;
+using Avalonia.Media.Imaging;
+
+namespace SteganographyApp.Services;
+
+public class LSBEncoder
 {
-    var bits = new List<int>(); // création de "List" pour bits
-
-    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(message); // message -> tableau bytes
-
-    foreach (byte b in bytes) // byte de chaque caractère (tableau byte) -> binaire
+    // Convertit le message texte en une liste de bits (0 et 1).
+    private List<int> MessageToBits(string message)
     {
-        for (int i = 7; i >= 0; i--)
+        var bits = new List<int>();
+
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(message);
+
+        foreach (byte b in bytes)
         {
-            bits.Add((b >> i) & 1);
+            for (int i = 7; i >= 0; i--)
+            {
+                bits.Add((b >> i) & 1);
+            }
         }
+
+        return bits;
     }
 
-    return bits;
-}
-
-private List<int> AddLengthHeader(List<int> messageBits) // Permet de savoir la taille du message a décoder dés le debut de l'image (évite de lire toute l'image au décodage)
-{
-    int length = messageBits.Count; // nb total de bits du message
-    var result = new List<int>(); // recrée une List finale
-
-    // encode sur 32 bits
-    for (int i = 31; i >= 0; i--)
+    // Ajoute un en-tête de 32 bits au début de la liste pour stocker la taille du message.
+    private List<int> AddLengthHeader(List<int> messageBits)
     {
-        result.Add((length >> i) & 1); // extrait chaque bit de la longeur donné
-    }
+        int length = messageBits.Count;
+        var result = new List<int>();
 
-    result.AddRange(messageBits); // ajout du message
-    return result;
-}
-
-public Bitmap Encode(Bitmap image, string message) // fct principale
-{
-    Bitmap newImage = new Bitmap(image); // Clonage de l'image de base
-
-    // Appel des fct précédente
-    var bits = MessageToBits(message);
-    bits = AddLengthHeader(bits);
-
-    // Dimension de la nouvelle image
-    int width = newImage.Width;
-    int height = newImage.Height;
-
-   
-    int maxBits = width * height * 3;  // Capacité dispo de bits
-
-    // Evite overflow
-    if (bits.Count > maxBits)
-        throw new Exception("Message trop long pour cette image");
-
-    int bitIndex = 0;
-
-    // Parcours complet de l'image
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
+        for (int i = 31; i >= 0; i--)
         {
-            Color pixel = newImage.GetPixel(x, y); // recup couleur
-
-            // sépare les canaux (couleur)
-            int r = pixel.R;
-            int g = pixel.G;
-            int b = pixel.B;
-
-            if (bitIndex < bits.Count)
-                r = (r & ~1) | bits[bitIndex++];
-
-            if (bitIndex < bits.Count)
-                g = (g & ~1) | bits[bitIndex++];
-
-            if (bitIndex < bits.Count)
-                b = (b & ~1) | bits[bitIndex++];
-
-            Color newPixel = Color.FromArgb(pixel.A, r, g, b); // recréation des pixels (On conserve Alpha)
-            newImage.SetPixel(x, y, newPixel); // Remplacement des anciens pixels avec les nouveau recréé 
-
-            // Quand on arrive au dernier pixel on arrête et on donne la nouvelle image
-            if (bitIndex >= bits.Count)
-                return newImage;
+            result.Add((length >> i) & 1);
         }
+
+        result.AddRange(messageBits);
+        return result;
     }
 
-    return newImage;
+    // Modifie les bits de poids faible de l'image source pour y dissimuler le message.
+    public WriteableBitmap Encode(WriteableBitmap image, string message)
+    {
+        var newImage = new WriteableBitmap(
+            image.PixelSize,
+            image.Dpi,
+            image.Format ?? Avalonia.Platform.PixelFormat.Bgra8888,
+            image.AlphaFormat ?? Avalonia.Platform.AlphaFormat.Unpremul);
+
+        var bits = MessageToBits(message);
+        bits = AddLengthHeader(bits);
+
+        int width = image.PixelSize.Width;
+        int height = image.PixelSize.Height;
+
+       
+        int maxBits = width * height * 3;
+
+        if (bits.Count > maxBits)
+            throw new Exception("Message trop long pour cette image");
+
+        int bitIndex = 0;
+
+        using (var oldBuf = image.Lock())
+        using (var newBuf = newImage.Lock())
+        {
+            int size = oldBuf.RowBytes * height;
+            byte[] temp = new byte[size];
+            Marshal.Copy(oldBuf.Address, temp, 0, size);
+            Marshal.Copy(temp, 0, newBuf.Address, size);
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    if (bitIndex >= bits.Count)
+                        return newImage;
+
+                    int offset = y * newBuf.RowBytes + x * 4;
+                    
+                    byte c1 = Marshal.ReadByte(newBuf.Address, offset);
+                    byte c2 = Marshal.ReadByte(newBuf.Address, offset + 1);
+                    byte c3 = Marshal.ReadByte(newBuf.Address, offset + 2);
+
+                    c1 = (byte)((c1 & ~1) | bits[bitIndex++]);
+
+                    if (bitIndex < bits.Count)
+                        c2 = (byte)((c2 & ~1) | bits[bitIndex++]);
+
+                    if (bitIndex < bits.Count)
+                        c3 = (byte)((c3 & ~1) | bits[bitIndex++]);
+
+                    Marshal.WriteByte(newBuf.Address, offset, c1);
+                    Marshal.WriteByte(newBuf.Address, offset + 1, c2);
+                    Marshal.WriteByte(newBuf.Address, offset + 2, c3);
+                }
+            }
+        }
+
+        return newImage;
+    }
 }

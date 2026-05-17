@@ -1,4 +1,34 @@
-input fichier image
-champ texte message
-bouton encoder
-preview image
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="SteganographyApp.Views.EncodeView">
+
+    <StackPanel Margin="20" Spacing="10">
+        
+        <TextBlock Text="Encode Message"
+                   FontSize="24"
+                   HorizontalAlignment="Center"/>
+
+        <Button x:Name="SelectImageButton"
+                Content="Choisir une image source"
+                Width="200"/>
+
+        <TextBox x:Name="PasswordTextBox"
+                 PasswordChar="*"
+                 PlaceholderText="Mot de passe (optionnel)"
+                 Width="200"/>
+
+        <TextBox x:Name="MessageTextBox"
+                 AcceptsReturn="True"
+                 PlaceholderText="Entrez le message à cacher..."
+                 Height="120"/>
+
+        <Button x:Name="EncodeButton"
+                Content="Encoder et Sauvegarder"
+                Width="200"
+                HorizontalAlignment="Center"/>
+                
+        <TextBlock x:Name="StatusText" HorizontalAlignment="Center"/>
+        <TextBlock x:Name="CapacityText" HorizontalAlignment="Center" Foreground="Gray"/>
+    </StackPanel>
+</UserControl>

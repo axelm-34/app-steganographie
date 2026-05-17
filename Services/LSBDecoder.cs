@@ -1,60 +1,76 @@
-private int BitsToInt(List<int> bits) {// List -> nombre entiers
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+using Avalonia.Media.Imaging;
 
-    int value = 0;
+namespace SteganographyApp.Services;
 
-    // Lire chaque bit un par un
-    foreach (int bit in bits) 
-    {
-        value = (value << 1) | bit;
-    }
+public class LSBDecoder
+{
+    // Convertit une liste de 32 bits en un nombre entier (utilisé pour lire la taille du message).
+    private int BitsToInt(List<int> bits) {
+        int value = 0;
 
-    return value;
-}
-
-private string BitsToMessage(List<int> bits) { // Bits -> Texte
-
-    List<byte> bytes = new List<byte>(); // Stock charactères en byte
-
-    for (int i = 0; i < bits.Count; i += 8) // Avance de 8 bit en 8 bit (1 caractère = 8 bits)
-    {
-        byte b = 0;
-
-        for (int j = 0; j < 8; j++) // Lis les 8 bits du caractère
+        foreach (int bit in bits) 
         {
-            b = (byte)((b << 1) | bits[i + j]);
+            value = (value << 1) | bit;
         }
 
-        bytes.Add(b); // Ajout du caractère reconstruit
+        return value;
     }
 
-    return System.Text.Encoding.UTF8.GetString(bytes.ToArray()); // Bytes (caractère reconstuit) -> texte lisible
-}
+    // Convertit une liste de bits en chaîne de caractères UTF-8.
+    private string BitsToMessage(List<int> bits) {
+        List<byte> bytes = new List<byte>();
 
-public string Decode(Bitmap image) {
-    List<int> bits = new List<int>();
-
-    int width = image.Width;
-    int height = image.Height;
-
-    // Lire tous les bits de l'image
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
+        for (int i = 0; i < bits.Count; i += 8)
         {
-            Color pixel = image.GetPixel(x, y);
+            byte b = 0;
 
-            bits.Add(pixel.R & 1);
-            bits.Add(pixel.G & 1);
-            bits.Add(pixel.B & 1);
+            for (int j = 0; j < 8; j++)
+            {
+                b = (byte)((b << 1) | bits[i + j]);
+            }
+
+            bytes.Add(b);
         }
+
+        return System.Text.Encoding.UTF8.GetString(bytes.ToArray());
     }
 
-    // Lire les 32 premiers bits pour avoir la longueur du message
-    int messageLength = BitsToInt(bits.Take(32).ToList());
+    // Extrait et décode le message caché dans les pixels de l'image sélectionnée.
+    public string Decode(WriteableBitmap image) {
+        List<int> bits = new List<int>();
 
-    // Recup seulement le message
-    List<int> messageBits = bits.Skip(32).Take(messageLength).ToList();
+        int width = image.PixelSize.Width;
+        int height = image.PixelSize.Height;
 
-    // Convertir en texte
-    return BitsToMessage(messageBits);
+        using (var buf = image.Lock())
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int offset = y * buf.RowBytes + x * 4;
+                    byte c1 = Marshal.ReadByte(buf.Address, offset);
+                    byte c2 = Marshal.ReadByte(buf.Address, offset + 1);
+                    byte c3 = Marshal.ReadByte(buf.Address, offset + 2);
+
+                    bits.Add(c1 & 1);
+                    bits.Add(c2 & 1);
+                    bits.Add(c3 & 1);
+                }
+            }
+        }
+
+        int messageLength = BitsToInt(bits.Take(32).ToList());
+        
+        if (messageLength <= 0 || messageLength > bits.Count - 32)
+            return "Erreur : Aucun message stéganographié trouvé ou image corrompue.";
+
+        List<int> messageBits = bits.Skip(32).Take(messageLength).ToList();
+
+        return BitsToMessage(messageBits);
+    }
 }

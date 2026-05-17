@@ -1,4 +1,16 @@
-Commencer par le back (encodage puis décodage) et quand sa marche on fait le front
+Projet en version : net10.0
+  pour vérifier votre version : dotnet --version
+
+Restaurer les dépendances :
+  dotnet restore
+
+Compiler le projet :
+  dotnet build
+
+Lancer l'application :
+  dotnet run
+
+
 
 Flux de fonctionnement
 Encodage
@@ -14,5 +26,3 @@ UI (DecodeView)
    → LSBDecoder
      → retourne message
        → affiché à l’écran
-
-Faire que pour PNG
