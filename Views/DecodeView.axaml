@@ -9,15 +9,20 @@
                    FontSize="24"
                    HorizontalAlignment="Center"/>
 
-        <Button Content="Choisir une image"
+        <Button x:Name="SelectImageButton"
+                Content="Choisir une image"
                 Width="200"/>
 
-        <TextBox AcceptsReturn="True"
+        <TextBox x:Name="MessageTextBox"
+                 AcceptsReturn="True"
                  Height="120"
                  IsReadOnly="True"/>
 
-        <Button Content="Décoder"
+        <Button x:Name="DecodeButton"
+                Content="Décoder"
                 Width="120"
                 HorizontalAlignment="Center"/>
+                
+        <TextBlock x:Name="StatusText" HorizontalAlignment="Center"/>
     </StackPanel>
 </UserControl>

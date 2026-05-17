@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Runtime.InteropServices;
+using Avalonia;
+using Avalonia.Media.Imaging;
 
 namespace SteganographyApp.Services;
 
@@ -38,17 +40,22 @@ public class LSBEncoder
         return result;
     }
 
-    public Bitmap Encode(Bitmap image, string message) // fct principale
+    public WriteableBitmap Encode(WriteableBitmap image, string message) // fct principale
     {
-        Bitmap newImage = new Bitmap(image); // Clonage de l'image de base
+        // Création de la nouvelle image avec les paramètres d'origine
+        var newImage = new WriteableBitmap(
+            image.PixelSize,
+            image.Dpi,
+            image.Format ?? Avalonia.Platform.PixelFormat.Bgra8888,
+            image.AlphaFormat ?? Avalonia.Platform.AlphaFormat.Unpremul);
 
         // Appel des fct précédente
         var bits = MessageToBits(message);
         bits = AddLengthHeader(bits);
 
         // Dimension de la nouvelle image
-        int width = newImage.Width;
-        int height = newImage.Height;
+        int width = image.PixelSize.Width;
+        int height = image.PixelSize.Height;
 
        
         int maxBits = width * height * 3;  // Capacité dispo de bits
@@ -59,33 +66,44 @@ public class LSBEncoder
 
         int bitIndex = 0;
 
-        // Parcours complet de l'image
-        for (int y = 0; y < height; y++)
+        using (var oldBuf = image.Lock())
+        using (var newBuf = newImage.Lock())
         {
-            for (int x = 0; x < width; x++)
+            // Copie de tous les pixels depuis l'image source vers la nouvelle (Très rapide en mémoire)
+            int size = oldBuf.RowBytes * height;
+            byte[] temp = new byte[size];
+            Marshal.Copy(oldBuf.Address, temp, 0, size);
+            Marshal.Copy(temp, 0, newBuf.Address, size);
+
+            // Parcours complet de l'image pour modifier les pixels
+            for (int y = 0; y < height; y++)
             {
-                Color pixel = newImage.GetPixel(x, y); // recup couleur
+                for (int x = 0; x < width; x++)
+                {
+                    if (bitIndex >= bits.Count)
+                        return newImage;
 
-                // sépare les canaux (couleur)
-                int r = pixel.R;
-                int g = pixel.G;
-                int b = pixel.B;
+                    // Localisation du pixel en mémoire
+                    int offset = y * newBuf.RowBytes + x * 4;
+                    
+                    // Récupération des trois premiers canaux de couleur de l'image (B, G, R)
+                    byte c1 = Marshal.ReadByte(newBuf.Address, offset);
+                    byte c2 = Marshal.ReadByte(newBuf.Address, offset + 1);
+                    byte c3 = Marshal.ReadByte(newBuf.Address, offset + 2);
 
-                if (bitIndex < bits.Count)
-                    r = (r & ~1) | bits[bitIndex++];
+                    c1 = (byte)((c1 & ~1) | bits[bitIndex++]);
 
-                if (bitIndex < bits.Count)
-                    g = (g & ~1) | bits[bitIndex++];
+                    if (bitIndex < bits.Count)
+                        c2 = (byte)((c2 & ~1) | bits[bitIndex++]);
 
-                if (bitIndex < bits.Count)
-                    b = (b & ~1) | bits[bitIndex++];
+                    if (bitIndex < bits.Count)
+                        c3 = (byte)((c3 & ~1) | bits[bitIndex++]);
 
-                Color newPixel = Color.FromArgb(pixel.A, r, g, b); // recréation des pixels (On conserve Alpha)
-                newImage.SetPixel(x, y, newPixel); // Remplacement des anciens pixels avec les nouveau recréé 
-
-                // Quand on arrive au dernier pixel on arrête et on donne la nouvelle image
-                if (bitIndex >= bits.Count)
-                    return newImage;
+                    // Application des nouvelles couleurs au pixel
+                    Marshal.WriteByte(newBuf.Address, offset, c1);
+                    Marshal.WriteByte(newBuf.Address, offset + 1, c2);
+                    Marshal.WriteByte(newBuf.Address, offset + 2, c3);
+                }
             }
         }
 

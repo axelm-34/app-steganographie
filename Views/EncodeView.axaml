@@ -9,15 +9,21 @@
                    FontSize="24"
                    HorizontalAlignment="Center"/>
 
-        <Button Content="Choisir une image"
+        <Button x:Name="SelectImageButton"
+                Content="Choisir une image source"
                 Width="200"/>
 
-        <TextBox PlaceholderText="Entrez votre message"
-                AcceptsReturn="True"
-                Height="120"/>
+        <TextBox x:Name="MessageTextBox"
+                 AcceptsReturn="True"
+                 Watermark="Entrez le message à cacher..."
+                 Height="120"/>
 
-        <Button Content="Encoder"
-                Width="120"
+        <Button x:Name="EncodeButton"
+                Content="Encoder et Sauvegarder"
+                Width="200"
                 HorizontalAlignment="Center"/>
+                
+        <TextBlock x:Name="StatusText" HorizontalAlignment="Center"/>
+        <TextBlock x:Name="CapacityText" HorizontalAlignment="Center" Foreground="Gray"/>
     </StackPanel>
 </UserControl>
