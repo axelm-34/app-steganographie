@@ -26,3 +26,13 @@
 - source ~/.bashrc
 
 Verifier avec : dotnet --version
+
+### Voici comment compiler le projet en un .exe autonome (Windows)
+
+Pour créer un exécutable Windows qui peut être lancé n'importe où sans nécessiter l'installation de .NET :
+
+```bash
+dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true
+```
+
+Le fichier `.exe` généré se trouvera dans le dossier `bin/Release/net10.0/win-x64/publish/`.

@@ -55,7 +55,7 @@ public partial class DecodeView : UserControl
         }
         
         string texteExtrait = _decoder.Decode(_selectedImage);
-        string motDePasse = PasswordTextBox.Text;
+        string motDePasse = PasswordTextBox.Text ?? "";
         
         bool estChiffre = texteExtrait.StartsWith("ENC:");
         

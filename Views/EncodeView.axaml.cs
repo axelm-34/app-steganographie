@@ -53,14 +53,13 @@ public partial class EncodeView : UserControl
     // Chiffre le message, l'encode dans l'image sélectionnée puis sauvegarde le fichier résultant.
     private async void OnEncodeClick(object? sender, RoutedEventArgs e)
     {
-        bool aucuneImage = _selectedImage == null;
-        bool aucunMessage = string.IsNullOrWhiteSpace(MessageTextBox.Text);
-        if (aucuneImage || aucunMessage) return;
+        // En faisant la vérification directement ici, le compilateur sait que l'image ne sera pas null
+        if (_selectedImage == null || string.IsNullOrWhiteSpace(MessageTextBox.Text)) return;
         
         try 
         {
-            string messageACacher = MessageTextBox.Text;
-            string motDePasse = PasswordTextBox.Text;
+            string messageACacher = MessageTextBox.Text ?? "";
+            string motDePasse = PasswordTextBox.Text ?? "";
             
             if (!string.IsNullOrWhiteSpace(motDePasse))
             {
