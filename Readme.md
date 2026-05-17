@@ -1,28 +1,28 @@
-Projet en version : net10.0
-  pour vérifier votre version : dotnet --version
+# APP STEGANOGRAPHIE
 
-Restaurer les dépendances :
-  dotnet restore
+**Ceci est une application simple permettant d'encoder un message dans une image ainsi que de decoder un message présent dans une image**
 
-Compiler le projet :
-  dotnet build
+## Voici comment lancer l'application :
 
-Lancer l'application :
-  dotnet run
+- Voir si dotnet est installer : **dotnet --version**
 
+> Si vous n'avez pas dotnet 10.0 :
+- Installer dotnet version 10.0 (net10.0)
 
+- Restorer les dépendances : **dotnet restore**
 
-Flux de fonctionnement
-Encodage
-UI (EncodeView)
- → ViewModel
-   → LSBEncoder (Service)
-     → retourne image modifiée
-       → affichée + sauvegardée
+- Lancer l'application : **dotnet run**
 
-Décodage
-UI (DecodeView)
- → ViewModel
-   → LSBDecoder
-     → retourne message
-       → affiché à l’écran
+### Voici comment installer dotnet sur Debian/Linux
+
+- wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+
+- chmod +x dotnet-install.sh
+
+- ./dotnet-install.sh --channel 10.0
+
+- echo 'export PATH="$PATH:$HOME/.dotnet"' >> ~/.bashrc
+
+- source ~/.bashrc
+
+Verifier avec : dotnet --version
